@@ -1,4 +1,5 @@
-﻿using OneBRC.Shared;
+﻿using System.Diagnostics;
+using OneBRC.Shared;
 
 namespace OneBRC;
 
@@ -11,7 +12,7 @@ public class StreamReaderImpl
         _filePath = filePath;
     }
 
-    public ValueTask Run()
+    public ValueTask<Dictionary<string, Accumulator>> Run()
     {
         var dictionary = new Dictionary<string, Accumulator>();
         using var reader = File.OpenText(_filePath);
@@ -26,16 +27,12 @@ public class StreamReaderImpl
             if (!dictionary.TryGetValue(city, out var accumulator))
             {
                 dictionary[city] = accumulator = new Accumulator(city);
-                accumulator.Record(value);
             }
+            accumulator.Record(value);
+
             line = reader.ReadLine();
         }
-
-        foreach (var accumulator in dictionary.Values.OrderBy(a => a.City))
-        {
-            Console.WriteLine($"{accumulator.City}: {accumulator.Min:F1}/{accumulator.Mean:F1}/{accumulator.Max:F1}");
-        }
-
-        return default;
+        
+        return new ValueTask<Dictionary<string, Accumulator>>(dictionary);
     }
 }
